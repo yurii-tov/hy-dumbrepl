@@ -10,7 +10,7 @@
   (let* ((venv (if current-prefix-arg
                    (read-directory-name "Venv bin directory:")
                  "venv/bin/"))
-         (exec-path (cons venv exec-path)))
+         (exec-path (cons (file-truename venv) exec-path)))
     (when (file-exists-p venv)
       (message "Using venv: %s" venv))
     (funcall f)))

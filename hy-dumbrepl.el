@@ -9,8 +9,14 @@
 (defun run-hy-with-venv (f)
   (let* ((venv (if current-prefix-arg
                    (read-directory-name "Venv bin directory:")
-                 "venv/bin/"))
-         (exec-path (cons (file-truename venv) exec-path)))
+                 (car (mapcan (lambda (x)
+                                (let ((f (expand-file-name x "venv")))
+                                  (when (file-exists-p f)
+                                    (list (file-truename f)))))
+                              '("bin" "Scripts")))))
+         (exec-path (if venv
+                        (cons venv exec-path)
+                      exec-path)))
     (when (file-exists-p venv)
       (message "Using venv: %s" venv))
     (funcall f)))

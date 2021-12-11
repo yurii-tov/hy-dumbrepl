@@ -6,24 +6,27 @@
        (require 'hy-mode))
 
 
-(defun run-hy-dumbrepl (f)
+(defun run-hy-dumbrepl ()
+  (interactive)
   (let* ((venv (if current-prefix-arg
-                   (read-directory-name "Venv bin directory:")
-                 (car (mapcan (lambda (x)
-                                (let ((f (expand-file-name x "venv")))
-                                  (when (file-exists-p f)
-                                    (list (file-truename f)))))
-                              '("bin" "Scripts")))))
-         (exec-path (if venv
-                        (cons venv exec-path)
-                      exec-path))
-         (hy-shell--interpreter-args '("--repl-output-fn"
-                                       "hy.contrib.hy-repr.hy-repr")))
-    (when venv (message "Using venv: %s" venv))
-    (funcall f)))
-
-
-(advice-add 'run-hy :around 'run-hy-dumbrepl)
+                   (read-directory-name "Venv directory:")
+                 (file-truename "venv")))
+         (venv-activate (if (file-exists-p venv)
+                            (progn (message "Using venv: %s" venv)
+                                   (format ". $(find %s -iname activate); "
+                                           venv))
+                          "")))
+    (let ((buffer "*Hy*"))
+      (make-comint-in-buffer
+       hy-shell--name
+       buffer
+       "bash"
+       nil
+       "-c"
+       (format ". ~/.bashrc; %s hy --repl-output-fn=hy.contrib.hy-repr.hy-repr -i '(require [hy.contrib.walk [let]])'"
+               venv-activate))
+      (switch-to-buffer buffer)
+      (inferior-hy-mode))))
 
 
 (defun hy-repl-set-repl-buffer (&optional buffer)
@@ -90,7 +93,7 @@
   (hy-repl-inspect-symbol-at-point "(dir %s)"))
 
 
-(progn (define-key repls-map (kbd "h") 'run-hy)
+(progn (define-key repls-map (kbd "h") 'run-hy-dumbrepl)
        (dolist (x '(("C-x C-e" hy-repl-send-last-sexp)
                     ("C-c e r" hy-repl-send-region)
                     ("C-c e b" hy-repl-set-repl-buffer)

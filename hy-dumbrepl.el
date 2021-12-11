@@ -19,8 +19,7 @@
                       exec-path))
          (hy-shell--interpreter-args '("--repl-output-fn"
                                        "hy.contrib.hy-repr.hy-repr")))
-    (when (file-exists-p venv)
-      (message "Using venv: %s" venv))
+    (when venv (message "Using venv: %s" venv))
     (funcall f)))
 
 

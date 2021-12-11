@@ -6,26 +6,25 @@
        (require 'hy-mode))
 
 
-(defun run-hy-dumbrepl ()
-  (interactive)
+(defun run-hy-dumbrepl (f)
   (let* ((venv (if current-prefix-arg
-                   (read-directory-name "Venv directory:")
-                 (file-truename "venv")))
-         (venv-activate (if (file-exists-p venv)
-                            (progn (message "Using venv: %s" venv)
-                                   (format ". $(find %s -iname activate); "
-                                           venv))
-                          "")))
-    (let ((buffer "*Hy*"))
-      (start-process "Hy"
-                     buffer
-                     "bash"
-                     "-c"
-                     (format ". ~/.bashrc; %s hy --repl-output-fn=hy.contrib.hy-repr.hy-repr -i '(require [hy.contrib.walk [let]])'"
-                             venv-activate))
-      (with-current-buffer buffer
-        (inferior-hy-mode))
-      (switch-to-buffer buffer))))
+                   (read-directory-name "Venv bin directory:")
+                 (car (mapcan (lambda (x)
+                                (let ((f (expand-file-name x "venv")))
+                                  (when (file-exists-p f)
+                                    (list (file-truename f)))))
+                              '("bin" "Scripts")))))
+         (exec-path (if venv
+                        (cons venv exec-path)
+                      exec-path))
+         (hy-shell--interpreter-args '("--repl-output-fn"
+                                       "hy.contrib.hy-repr.hy-repr")))
+    (when (file-exists-p venv)
+      (message "Using venv: %s" venv))
+    (funcall f)))
+
+
+(advice-add 'run-hy :around 'run-hy-dumbrepl)
 
 
 (defun hy-repl-set-repl-buffer (&optional buffer)
@@ -92,7 +91,7 @@
   (hy-repl-inspect-symbol-at-point "(dir %s)"))
 
 
-(progn (define-key repls-map (kbd "h") 'run-hy-dumbrepl)
+(progn (define-key repls-map (kbd "h") 'run-hy)
        (dolist (x '(("C-x C-e" hy-repl-send-last-sexp)
                     ("C-c e r" hy-repl-send-region)
                     ("C-c e b" hy-repl-set-repl-buffer)

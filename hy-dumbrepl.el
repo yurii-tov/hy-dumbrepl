@@ -6,7 +6,7 @@
        (require 'hy-mode))
 
 
-(defun run-hy-with-venv (f)
+(defun run-hy-dumbrepl (f)
   (let* ((venv (if current-prefix-arg
                    (read-directory-name "Venv bin directory:")
                  (car (mapcan (lambda (x)
@@ -16,13 +16,15 @@
                               '("bin" "Scripts")))))
          (exec-path (if venv
                         (cons venv exec-path)
-                      exec-path)))
+                      exec-path))
+         (hy-shell--interpreter-args '("--repl-output-fn"
+                                       "hy.contrib.hy-repr.hy-repr")))
     (when (file-exists-p venv)
       (message "Using venv: %s" venv))
     (funcall f)))
 
 
-(advice-add 'run-hy :around 'run-hy-with-venv)
+(advice-add 'run-hy :around 'run-hy-dumbrepl)
 
 
 (defun hy-repl-set-repl-buffer (&optional buffer)
